@@ -5,109 +5,85 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>こもれび工房・町をタップして歩く試作</title>
 <style>
-html,body{margin:0;background:#20251f;height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans",sans-serif}
+html,body{margin:0;background:#20251f;height:100%;overflow:hidden}
 #wrap{height:100%;display:flex;align-items:center;justify-content:center}
-canvas{max-width:100vw;max-height:100vh;touch-action:none;image-rendering:auto}
-#msg{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);background:rgba(35,31,23,.82);
-color:white;padding:8px 14px;border-radius:18px;font-size:13px;pointer-events:none;white-space:nowrap}
-</style></head>
-<body><div id="wrap"><canvas id="c" width="1448" height="1086"></canvas></div>
+canvas{max-width:100vw;max-height:100vh;touch-action:none;display:block}
+#msg{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);background:rgba(32,37,31,.88);color:white;padding:8px 14px;border-radius:18px;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans",sans-serif;font-weight:700;white-space:nowrap}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="c"></canvas></div>
 <div id="msg">石畳をタップしてね 🌿</div>
 <script>
 const c=document.getElementById('c'),ctx=c.getContext('2d');
-const bg=new Image(), sp=new Image();
-bg.src='background.png';
+const bg=new Image();
 let p={x:720,y:720}, target=null, route=[], step=0;
 const fountain={x:710,y:420,rx:155,ry:105};
 
-// 歩行可能エリア：中央広場＋上下左右へ伸びる石畳
 function walkable(x,y){
-  const plaza = ((x-710)/390)**2 + ((y-455)/235)**2 < 1;
-  const south = x>555 && x<850 && y>455 && y<1030;
-  const north = x>600 && x<820 && y>80 && y<455;
-  const west  = x>175 && x<710 && y>320 && y<610;
-  const east  = x>710 && x<1240 && y>320 && y<650;
-  const blockedFountain = ((x-fountain.x)/fountain.rx)**2 + ((y-fountain.y)/fountain.ry)**2 < 1;
-  // 建物側や花壇へ入りすぎないため外縁を少し狭める
-  return (plaza||south||north||west||east) && !blockedFountain;
+  const plaza=((x-710)/390)**2+((y-455)/235)**2<1;
+  const south=x>555&&x<850&&y>455&&y<1100;
+  const north=x>600&&x<820&&y>80&&y<455;
+  const west=x>175&&x<710&&y>320&&y<610;
+  const east=x>710&&x<1240&&y>320&&y<610;
+  const blockedFountain=((x-fountain.x)/fountain.rx)**2+((y-fountain.y)/fountain.ry)**2<1;
+  return (plaza||south||north||west||east)&&!blockedFountain;
 }
-
 function lineHitsFountain(a,b){
   for(let i=0;i<=40;i++){
-    let t=i/40, x=a.x+(b.x-a.x)*t, y=a.y+(b.y-a.y)*t;
-    if(((x-fountain.x)/fountain.rx)**2+((y-fountain.y)/fountain.ry)**2<1.08) return true;
+    const t=i/40,x=a.x+(b.x-a.x)*t,y=a.y+(b.y-a.y)*t;
+    if(((x-fountain.x)/fountain.rx)**2+((y-fountain.y)/fountain.ry)**2<1)return true;
   }
   return false;
 }
-
 function makeRoute(a,b){
-  if(!lineHitsFountain(a,b)) return [b];
-  // 噴水を左右どちらから回るか、短い方を選ぶ
-  const left=[{x:520,y:500},{x:520,y:345}];
-  const right=[{x:900,y:500},{x:900,y:345}];
-  function len(rs){
-    let q=a,s=0;
-    for(const r of [...rs,b]){s+=Math.hypot(r.x-q.x,r.y-q.y);q=r;}
-    return s;
-  }
+  if(!lineHitsFountain(a,b))return[b];
+  const left=[{x:520,y:500},{x:520,y:345}],right=[{x:900,y:500},{x:900,y:345}];
+  function len(rs){let q=a,s=0;for(const r of [...rs,b]){s+=Math.hypot(r.x-q.x,r.y-q.y);q=r}return s}
   let rs=len(left)<len(right)?left:right;
-  // 行き先が手前なら順序を反転
-  if(b.y>fountain.y && a.y<fountain.y) rs=[...rs].reverse();
+  if(b.y>fountain.y&&a.y<fountain.y)rs=[...rs].reverse();
   return [...rs,b].filter(q=>walkable(q.x,q.y));
 }
-
 function posFromEvent(e){
   const r=c.getBoundingClientRect();
-  const touch=e.touches?e.touches[0]:e;
-  return {x:(touch.clientX-r.left)*c.width/r.width,y:(touch.clientY-r.top)*c.height/r.height};
+  return{x:(e.clientX-r.left)*c.width/r.width,y:(e.clientY-r.top)*c.height/r.height};
 }
-
 function choose(e){
   e.preventDefault();
-  let q=posFromEvent(e);
+  const q=posFromEvent(e);
   if(!walkable(q.x,q.y)){
-    document.getElementById('msg').textContent='そこは歩けないよ 🌼 石畳をタップしてね';
-    setTimeout(()=>document.getElementById('msg').textContent='石畳をタップしてね 🌿',1200);
-    return;
+    const m=document.getElementById('msg');m.textContent='そこは歩けないよ 🌿';
+    setTimeout(()=>m.textContent='石畳をタップしてね 🌿',900);return;
   }
-  route=makeRoute(p,q); step=0;
+  route=makeRoute(p,q);step=0;
 }
 c.addEventListener('pointerdown',choose);
 
 function update(){
   if(step<route.length){
-    const q=route[step], dx=q.x-p.x, dy=q.y-p.y, d=Math.hypot(dx,dy);
-    if(d<5) step++;
-    else {
-      const speed=4.0;
-      let nx=p.x+dx/d*speed, ny=p.y+dy/d*speed;
-      if(walkable(nx,ny)){p.x=nx;p.y=ny;}
-      else step++;
-    }
+    const q=route[step],dx=q.x-p.x,dy=q.y-p.y,d=Math.hypot(dx,dy);
+    if(d<5)step++;
+    else{const speed=4;const nx=p.x+dx/d*speed,ny=p.y+dy/d*speed;if(walkable(nx,ny)){p.x=nx;p.y=ny}else step++}
   }
 }
-
 function draw(){
   ctx.clearRect(0,0,c.width,c.height);
-  ctx.drawImage(bg,0,0);
-  // 足元の小さな影
-  ctx.save();ctx.globalAlpha=.22;ctx.fillStyle='#2a241c';
-  ctx.beginPath();ctx.ellipse(p.x,p.y-2,18,7,0,0,Math.PI*2);ctx.fill();ctx.restore();
-
-  // 主人公：足裏を p に合わせる
-  const sw=82, sh=100;
-  ctx.drawImage(sp,p.x-sw/2,p.y-sh,sw,sh);
-
-  // タップ地点
-  if(step<route.length){
-    const q=route[route.length-1];
-    ctx.save();ctx.strokeStyle='rgba(255,255,255,.8)';ctx.lineWidth=4;
-    ctx.beginPath();ctx.arc(q.x,q.y,13,0,Math.PI*2);ctx.stroke();ctx.restore();
-  }
+  ctx.drawImage(bg,0,0,c.width,c.height);
+  ctx.save();ctx.globalAlpha=.22;ctx.fillStyle='#000';ctx.beginPath();ctx.ellipse(p.x,p.y-2,18,7,0,0,Math.PI*2);ctx.fill();ctx.restore();
+  ctx.save();ctx.fillStyle='#f4ead7';ctx.strokeStyle='#4f5d3d';ctx.lineWidth=5;ctx.beginPath();ctx.arc(p.x,p.y-45,25,0,Math.PI*2);ctx.fill();ctx.stroke();
+  ctx.fillStyle='#66734d';ctx.beginPath();ctx.ellipse(p.x,p.y-68,31,13,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#c98759';ctx.fillRect(p.x-20,p.y-20,40,46);ctx.restore();
+  if(step<route.length){const q=route[route.length-1];ctx.save();ctx.strokeStyle='rgba(255,255,255,.9)';ctx.lineWidth=4;ctx.beginPath();ctx.arc(q.x,q.y,13,0,Math.PI*2);ctx.stroke();ctx.restore()}
 }
-
 function loop(){update();draw();requestAnimationFrame(loop)}
-Promise.all([
- new Promise(r=>bg.onload=r),new Promise(r=>sp.onload=r)
-]).then(loop);
-</script></body></html>
+
+bg.onload=()=>{
+  c.width=bg.naturalWidth;c.height=bg.naturalHeight;
+  if(!walkable(p.x,p.y)){p={x:c.width/2,y:c.height*.72}}
+  loop();
+};
+bg.onerror=()=>{document.getElementById('msg').textContent='町の画像を読み込めませんでした';};
+bg.src='background.png';
+</script>
+</body>
+</html>
