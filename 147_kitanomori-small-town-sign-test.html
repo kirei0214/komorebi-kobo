@@ -236,7 +236,7 @@ document.querySelectorAll('.gatherPoint').forEach(btn=>{
 const townExit=document.getElementById('townExit');
 townExit.addEventListener('pointerdown',e=>{
  e.preventDefault();e.stopPropagation();
- window.location.href='146_town-roundtrip-test.html';
+ window.location.href='147_town-roundtrip-test.html';
 },{passive:false});
 
 
@@ -342,7 +342,7 @@ renderBag();/* 97: old movement loop disabled */
   hero.style.left=x*100+'%';hero.style.top=y*100+'%';
   if(typeof p!=='undefined'){p.x=x;p.y=y;}
   if(!inTownExit()){townExitArmed=true;}
-  else if(townExitArmed){location.href='146_town-roundtrip-test.html';return;}
+  else if(townExitArmed){location.href='147_town-roundtrip-test.html';return;}
  }
  function follow(){const vw=game.clientWidth,vh=game.clientHeight,hx=x*map.offsetWidth,hy=y*map.offsetHeight,maxL=Math.max(0,map.offsetWidth-vw),maxT=Math.max(0,map.offsetHeight-vh),wantL=Math.max(0,Math.min(maxL,hx-vw*.50)),wantT=Math.max(0,Math.min(maxT,hy-vh*.46));game.scrollLeft+=(wantL-game.scrollLeft)*.34;game.scrollTop+=(wantT-game.scrollTop)*.34;}
  function step(){const dx=tx-x,dy=ty-y,d=Math.hypot(dx,dy);if(d<.003){x=tx;y=ty;walking=false;draw();follow();return;}const s=Math.min(.0042,d);x+=dx/d*s;y+=dy/d*s;draw();follow();raf=requestAnimationFrame(step);}
